@@ -19,4 +19,22 @@ document.addEventListener('DOMContentLoaded', () => {
     request.onerror = (event) => {
         console.log('Error connecting to IndexedDB', event)
     }
+
+    const showRegister = document.getElementById('show-register')
+    const showLogin = document.getElementById('show-login')
+
+    const handleShowRegister = (event) => {
+        event.preventDefault()
+        document.getElementById('login-form').style.display = 'none'
+        document.getElementById('register-form').style.display = 'block'
+    }
+
+    const handleShowLogin = (event) => {
+        event.preventDefault()
+        document.getElementById('login-form').style.display = 'block'
+        document.getElementById('register-form').style.display = 'none'
+    }
+
+    showRegister.addEventListener('click', handleShowRegister)
+    showLogin.addEventListener('click', handleShowLogin)
 })
