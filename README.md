@@ -36,3 +36,19 @@
 4. Web Workers:
 
 -   Use Web Workers para calcular a distância entre duas localizações armazenadas, caso o usuário deseje.
+
+## Funcionalidades Adicionais
+
+1. Registro de Usuário:
+
+-   Permitir que novos usuários se registrem fornecendo um nome de usuário e uma senha.
+-   Armazenar as informações de registro de forma segura no IndexedDB.
+
+2. Login de Usuário:
+
+-   Permitir que usuários existentes façam login usando seu nome de usuário e senha.
+-   Manter a sessão do usuário ativa durante o uso do aplicativo.
+
+3. Entradas de Diário por Usuário:
+
+-   Cada usuário pode ter suas próprias entradas de diário, armazenadas separadamente.
