@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             password,
         }
 
-        request = db.transaction(['users'], 'readwrite').objectStore('users').add(user)
+        let request = db.transaction(['users'], 'readwrite').objectStore('users').add(user)
 
         request.onsuccess = (event) => {
             console.log('User registered successfully')
@@ -53,20 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         request.onerror = (event) => {
-            console.error('Error registering user', event)
+            console.error('Error registering user', request.error)
             alert('Error registering user.')
         }
     }
 
     function loginUser(username, password) {
-        request = db.transaction(['users'], 'readonly').objectStore('users').get(username)
-
+        let request = db.transaction(['users'], 'readonly').objectStore('users').get(username)
+        
         request.onsuccess = (event) => {
             const user = event.target.result
             if (user && user.password === password) {
                 console.log('Login successful')
                 document.getElementById('user-auth').style.display = 'none'
                 document.getElementById('diary-entries').style.display = 'block'
+                displayEntries()
             } else {
                 console.error('Username or password is invalid')
                 alert('Username or password is invalid. Try again.')
@@ -96,4 +97,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loginBtn.addEventListener('click', handleLoginUser)
     registerBtn.addEventListener('click', handleRegisterUser)
+
+    const addEntryBtn = document.getElementById('add-entry-btn')
+
+    const handleAddEntry = (event) => {
+        const title = document.getElementById('title')
+        const description = document.getElementById('description')
+        let geo = navigator.geolocation
+
+        if (geo) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const entry = {
+                        title,
+                        description,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        date: new Date().toISOString(),
+                    }
+                    addEntry(entry)
+                },
+                (error) => {
+                    console.error('Error getting geolocation', error)
+                }
+            )
+        } else {
+            console.error('Geolocation is not supported by your browser')
+        }
+    }
+
+    addEntryBtn.addEventListener('click', handleAddEntry)
+
+    function addEntry(entry) {
+        let request = db.transaction([storeName], 'readwrite').objectStore(storeName).add(entry)
+
+        request.onsuccess = () => {
+            console.log('Entry added successfully')
+            displayEntries()
+        }
+
+        request.onerror = (event) => {
+            console.error('Error adding entry', event)
+        }
+    }
+
+    function displayEntries() {
+        let request = db.transaction([storeName], 'readonly').objectStore(storeName).getAll()
+
+        request.onsuccess = (event) => {
+            const entries = event.target.result
+            const entriesList = document.getElementById('diary-entries-list')
+            entriesList.innerHTML = ''
+
+            entries.forEach((entry) => {
+                const li = document.createElement('li')
+                li.textContent = `${entry.title} - ${entry.date}`
+                entriesList.appendChild(li)
+            })
+        }
+
+        request.onerror = (event) => {
+            console.log('Error fetching entries', event)
+        }
+    }
 })
