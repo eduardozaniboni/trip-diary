@@ -3,12 +3,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const storeName = 'entries'
     let db
 
-    const request = indexedDB.open(dbName, 1)
+    const request = indexedDB.open(dbName, 2)
 
     request.onupgradeneeded = (event) => {
         db = event.target.result
-        db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true })
-        db.createObjectStore('users', { keyPath: 'username' })
+
+        if (event.oldVersion < 1) {
+            // Versão 1: Criação inicial do banco de dados
+            let tripDiaryOS = db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true })
+            let usersOS = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true })
+        }
+
+        if (event.oldVersion < 2) {
+            // Versão 2: Adicionar índice para username
+            let usersOS = event.target.transaction.objectStore('users')
+            usersOS.createIndex('usernameIDX', 'username', { unique: true })
+        }
     }
 
     request.onsuccess = (event) => {
@@ -59,8 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loginUser(username, password) {
-        let request = db.transaction(['users'], 'readonly').objectStore('users').get(username)
-        
+        let request = db.transaction(['users'], 'readonly').objectStore('users').index('usernameIDX').get(username)
         request.onsuccess = (event) => {
             const user = event.target.result
             if (user && user.password === password) {
@@ -86,7 +95,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleRegisterUser = (event) => {
         const username = document.getElementById('register-username').value
         const password = document.getElementById('register-password').value
-        registerUser(username, password)
+
+        let request = db.transaction(['users'], 'readonly').objectStore('users').index('usernameIDX').get(username)
+
+        request.onsuccess = (event) => {
+            if (event.target.result) {
+                console.log('Username already in use. Choose another.')
+                alert('Username already in use. Choose another.')
+            } else if (password === null || password.trim() === '') {
+                console.log("The password can't be empty.")
+                alert("The password can't be empty.")
+            } else {
+                registerUser(username, password)
+            }
+        }
+
+        request.onerror = (event) => {
+            console.error('Error verifying username', event)
+            alert('Error verifying username.')
+        }
     }
 
     const handleLoginUser = (event) => {
@@ -101,18 +128,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const addEntryBtn = document.getElementById('add-entry-btn')
 
     const handleAddEntry = (event) => {
-        const title = document.getElementById('title')
-        const description = document.getElementById('description')
+        const title = document.getElementById('diary-title').value
+        const description = document.getElementById('diary-description').value
         let geo = navigator.geolocation
 
         if (geo) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
+                    const simulatedPosition = {
+                        sanFrancisco: {
+                            latitude: 37.7749, // Latitude de San Francisco
+                            longitude: -122.4194, // Longitude de San Francisco
+                        },
+                        saoPaulo: {
+                            latitude: -23.5505, // Latitude de São Paulo
+                            longitude: -46.6333, // Longitude de São Paulo
+                        },
+                        rioDeJaneiro: {
+                            latitude: -22.9068, // Latitude do Rio de Janeiro
+                            longitude: -43.1729, // Longitude do Rio de Janeiro
+                        },
+                        novaIorque: {
+                            latitude: 40.7128, // Latitude de Nova Iorque
+                            longitude: -74.006, // Longitude de Nova Iorque
+                        },
+                    }
+
                     const entry = {
                         title,
                         description,
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude,
+                        // latitude: simulatedPosition.rioDeJaneiro.latitude,
+                        // longitude: simulatedPosition.rioDeJaneiro.longitude,
                         date: new Date().toISOString(),
                     }
                     addEntry(entry)
@@ -129,7 +177,45 @@ document.addEventListener('DOMContentLoaded', () => {
     addEntryBtn.addEventListener('click', handleAddEntry)
 
     function addEntry(entry) {
-        let request = db.transaction([storeName], 'readwrite').objectStore(storeName).add(entry)
+        console.log(entry)
+
+        const request = db.transaction([storeName], 'readonly').objectStore(storeName).getAll()
+
+        request.onsuccess = (event) => {
+            const entries = event.target.result
+            if (entries.length > 0) {
+                const lastEntry = entries[entries.length - 1]
+                const lastLat = lastEntry.latitude
+                const lastLon = lastEntry.longitude
+
+                calculateDistance(lastLat, lastLon, entry.latitude, entry.longitude)
+                    .then((distance) => {
+                        const distanceInKm = distance / 1000
+                        console.log(`Distance from last entry: ${distanceInKm} km`)
+
+                        document.getElementById(
+                            'distance-info'
+                        ).textContent = `Distance from last entry: ${distanceInKm.toFixed(2)} quilometers`
+                        document.getElementById('distance-display').style.display = 'block'
+
+                        saveEntry(entry)
+                    })
+                    .catch((error) => {
+                        console.error('Error calculating distance:', error)
+                        saveEntry(entry)
+                    })
+            } else {
+                saveEntry(entry)
+            }
+        }
+
+        request.onerror = (event) => {
+            console.error('Error fetching entries', event)
+        }
+    }
+
+    function saveEntry(entry) {
+        const request = db.transaction([storeName], 'readwrite').objectStore(storeName).add(entry)
 
         request.onsuccess = () => {
             console.log('Entry added successfully')
@@ -142,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayEntries() {
-        let request = db.transaction([storeName], 'readonly').objectStore(storeName).getAll()
+        const request = db.transaction([storeName], 'readonly').objectStore(storeName).getAll()
 
         request.onsuccess = (event) => {
             const entries = event.target.result
@@ -151,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             entries.forEach((entry) => {
                 const li = document.createElement('li')
-                li.textContent = `${entry.title} - ${entry.date}`
+                li.innerHTML = `${entry.title} - ${entry.date}<br>${entry.description}`
                 entriesList.appendChild(li)
             })
         }
@@ -160,4 +246,29 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Error fetching entries', event)
         }
     }
+
+    // Inicialize o Web Worker
+    const distanceWorker = new Worker('workers.js')
+
+    // Função para solicitar o cálculo da distância
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        return new Promise((resolve, reject) => {
+            // Enviar os dados para o Web Worker
+            distanceWorker.postMessage({ lat1, lon1, lat2, lon2 })
+
+            // Receber a resposta do Web Worker
+            distanceWorker.onmessage = (event) => {
+                resolve(event.data)
+            }
+
+            distanceWorker.onerror = (error) => {
+                reject(error)
+            }
+        })
+    }
+
+    // Encerre o Web Worker quando não for mais necessário
+    window.addEventListener('unload', () => {
+        distanceWorker.terminate()
+    })
 })
