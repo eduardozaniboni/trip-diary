@@ -9,13 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
         db = event.target.result
 
         if (event.oldVersion < 1) {
-            // Versão 1: Criação inicial do banco de dados
             let tripDiaryOS = db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true })
             let usersOS = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true })
         }
 
         if (event.oldVersion < 2) {
-            // Versão 2: Adicionar índice para username
             let usersOS = event.target.transaction.objectStore('users')
             usersOS.createIndex('usernameIDX', 'username', { unique: true })
         }
@@ -35,14 +33,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const handleShowRegister = (event) => {
         event.preventDefault()
-        document.getElementById('login-form').style.display = 'none'
-        document.getElementById('register-form').style.display = 'block'
+        const loginForm = document.getElementById('login-form')
+        const registerForm = document.getElementById('register-form')
+        loginForm.classList.add('fade-out')
+        registerForm.classList.add('fade-in')
+
+        setTimeout(() => {
+            loginForm.style.display = 'none'
+            registerForm.style.display = 'block'
+            loginForm.classList.remove('fade-out')
+            registerForm.classList.remove('fade-in')
+        }, 500)
     }
 
     const handleShowLogin = (event) => {
         event.preventDefault()
-        document.getElementById('login-form').style.display = 'block'
-        document.getElementById('register-form').style.display = 'none'
+        const loginForm = document.getElementById('login-form')
+        const registerForm = document.getElementById('register-form')
+        registerForm.classList.add('fade-out')
+        loginForm.classList.add('fade-in')
+
+        setTimeout(() => {
+            registerForm.style.display = 'none'
+            loginForm.style.display = 'block'
+            registerForm.classList.remove('fade-out')
+            loginForm.classList.remove('fade-in')
+        }, 500)
     }
 
     showRegister.addEventListener('click', handleShowRegister)
@@ -74,9 +90,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const user = event.target.result
             if (user && user.password === password) {
                 console.log('Login successful')
-                document.getElementById('user-auth').style.display = 'none'
-                document.getElementById('diary-entries').style.display = 'block'
-                displayEntries()
+                const userAuth = document.getElementById('user-auth')
+                const diaryEntries = document.getElementById('diary-entries')
+                userAuth.classList.add('fade-out')
+                diaryEntries.classList.add('fade-in')
+
+                setTimeout(() => {
+                    userAuth.style.display = 'none'
+                    diaryEntries.style.display = 'block'
+                    userAuth.classList.remove('fade-out')
+                    diaryEntries.classList.remove('fade-in')
+                    displayEntries()
+                }, 500)
             } else {
                 console.error('Username or password is invalid')
                 alert('Username or password is invalid. Try again.')
@@ -157,10 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const entry = {
                         title,
                         description,
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        // latitude: simulatedPosition.rioDeJaneiro.latitude,
-                        // longitude: simulatedPosition.rioDeJaneiro.longitude,
+                        latitude: simulatedPosition.novaIorque.latitude,
+                        longitude: simulatedPosition.novaIorque.longitude,
                         date: new Date().toISOString(),
                     }
                     addEntry(entry)
@@ -191,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 calculateDistance(lastLat, lastLon, entry.latitude, entry.longitude)
                     .then((distance) => {
                         const distanceInKm = distance / 1000
-                        console.log(`Distance from last entry: ${distanceInKm} km`)
+                        console.log(`Distance from last entry: ${distanceInKm} quilometers`)
 
                         document.getElementById(
                             'distance-info'
@@ -199,13 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('distance-display').style.display = 'block'
 
                         saveEntry(entry)
+                        animateNewEntry()
                     })
                     .catch((error) => {
                         console.error('Error calculating distance:', error)
                         saveEntry(entry)
+                        animateNewEntry()
                     })
             } else {
                 saveEntry(entry)
+                animateNewEntry()
             }
         }
 
@@ -247,16 +273,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Inicialize o Web Worker
+    function animateNewEntry() {
+        const newEntry = document.getElementById('diary-entries-list').lastChild
+        newEntry.classList.add('bounce')
+        setTimeout(() => newEntry.classList.remove('bounce'), 500)
+    }
+
     const distanceWorker = new Worker('workers.js')
 
-    // Função para solicitar o cálculo da distância
     function calculateDistance(lat1, lon1, lat2, lon2) {
         return new Promise((resolve, reject) => {
-            // Enviar os dados para o Web Worker
             distanceWorker.postMessage({ lat1, lon1, lat2, lon2 })
 
-            // Receber a resposta do Web Worker
             distanceWorker.onmessage = (event) => {
                 resolve(event.data)
             }
@@ -267,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     }
 
-    // Encerre o Web Worker quando não for mais necessário
     window.addEventListener('unload', () => {
         distanceWorker.terminate()
     })
