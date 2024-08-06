@@ -8,27 +8,29 @@
     </head>
     <body>
         <div id="app">
-            <h1>Trip Diary</h1>
+            <h1 id="title">Trip Diary</h1>
+            <button id="btn-toggle-language">English</button>
             <div id="user-auth">
                 <div id="login-form">
-                    <h2>Login</h2>
+                    <h2 id="login-title">Login</h2>
                     <input type="text" id="login-username" placeholder="Username" />
                     <input type="password" id="login-password" placeholder="Password" />
                     <button id="login-btn">Login</button>
-                    <p>Don't have an account? <a href="#" id="show-register">Register</a></p>
+                    <p id="login-account">Don't have an account? <a href="#" id="show-register">Register</a></p>
                 </div>
                 <div id="register-form" style="display: none">
-                    <h2>Registro</h2>
+                    <h2 id="register-title">Register</h2>
                     <input type="text" id="register-username" placeholder="Username" />
                     <input type="password" id="register-password" placeholder="Password" />
                     <button id="register-btn">Register</button>
-                    <p>Already have an account? <a href="#" id="show-login">Log in</a></p>
+                    <p id="register-account">Already have an account? <a href="#" id="show-login">Login</a></p>
                 </div>
             </div>
+            <button id="logout-btn" class="hidden">Logout</button>
             <div id="diary-entries" style="display: none">
                 <h2>Add New Entry</h2>
                 <input type="text" id="diary-title" placeholder="Title" />
-                <textarea id="diary-description" placeholder="Description"></textarea>
+                <textarea id="diary-description" placeholder="Description" ></textarea>
                 <button id="add-entry-btn">Add Entry</button>
                 <div id="distance-display" style="display: none">
                     <p id="distance-info"></p>

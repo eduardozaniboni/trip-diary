@@ -19,19 +19,80 @@ body {
     margin-bottom: 20px;
 }
 
+h2 {
+    text-align: center;
+    padding: 2rem;
+}
+
 input,
 textarea {
     font-family: Poppins, sans-serif;
     width: 100%;
     margin-bottom: 10px;
     padding: 8px;
+    border-radius: 0.5rem;
+    border: none;
+    outline: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+textarea {
+    height: 150px;
+    resize: none;
+}
+
+#login-form,
+#register-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin: 5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+#login-btn,
+#register-btn {
+    font-size: 1rem;
+    padding: 0.5rem 1.5rem;
+    margin: 1rem 0 1rem;
+}
+
+li {
+    list-style-type: none;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    transition: scale 200ms ease-in-out;
+}
+
+li:hover {
+    scale: 1.02;
+}
+
+button {
+    outline: none;
+    border: none;
+    border-radius: 0.5rem;
+    transition: scale 100ms ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+button:hover {
+    scale: 1.05;
 }
 
 #distance-display {
     margin-top: 20px;
     padding: 10px;
     background-color: #f0f0f0;
-    border: 1px solid #ddd;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    border-radius: 0.5rem;
+    text-align: center;
 }
 
 .fade-in {
@@ -40,6 +101,37 @@ textarea {
 
 .fade-out {
     animation: fadeOut 0.5s forwards;
+}
+
+#add-entry-btn {
+    padding: 0.5rem 2rem;
+}
+
+#btn-toggle-language {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    margin: 2rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    color: #0c0c0c;
+}
+
+.hidden {
+    display: none;
+}
+
+#logout-btn {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    padding: 0.5rem 2rem;
+    margin: 2rem;
+    font-size: 1rem;
+    color: #0c0c0c;
+    cursor: pointer;
 }
 
 @keyframes fadeIn {
@@ -61,14 +153,14 @@ textarea {
 }
 
 .bounce {
-    animation: bounce 0.5s forwards;
+    animation: bounce 100ms forwards;
 }
 
 @keyframes bounce {
     from {
-        transform: scale(1);
+        transform: scale(0.99);
     }
     to {
-        transform: scale(1.1);
+        transform: scale(1);
     }
 }
