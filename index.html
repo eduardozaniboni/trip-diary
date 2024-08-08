@@ -29,14 +29,23 @@
             <button id="logout-btn" class="hidden">Logout</button>
             <div id="diary-entries" style="display: none">
                 <h2>Add New Entry</h2>
-                <input type="text" id="diary-title" placeholder="Title" />
-                <textarea id="diary-description" placeholder="Description" ></textarea>
-                <button id="add-entry-btn">Add Entry</button>
+                <div id="diary-form">
+                    <input type="text" id="diary-title" placeholder="Title" />
+                    <textarea id="diary-description" placeholder="Description"></textarea>
+                    <div class="diary-form-btn">
+                        <button id="add-entry-btn">Add Entry</button>
+                    </div>
+                </div>
                 <div id="distance-display" style="display: none">
                     <p id="distance-info"></p>
                 </div>
                 <h2>Journal Entries</h2>
                 <ul id="diary-entries-list"></ul>
+            </div>
+            <div id="image-modal" class="modal">
+                <span class="close-modal">&times;</span>
+                <img class="modal-content" id="modal-image" />
+                <div id="caption"></div>
             </div>
         </div>
         <script src="app.js"></script>

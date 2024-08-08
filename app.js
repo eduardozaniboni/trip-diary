@@ -65,6 +65,18 @@ document.addEventListener('DOMContentLoaded', () => {
             en: 'Add Entry',
             pt: 'Adicionar Entrada',
         },
+        imageBtn: {
+            en: 'Add Image',
+            pt: 'Adicionar Imagem',
+        },
+        viewImageBtn: {
+            en: 'View Image',
+            pt: 'Visualizar Imagem',
+        },
+        deleteEntryBtn: {
+            en: 'Delete Entry',
+            pt: 'Deletar Entrada',
+        },
         distanceInfo: {
             en: 'Distance from last entry: {distance} kilometers',
             pt: 'Distância desde a última entrada: {distance} quilômetros',
@@ -72,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
         journalEntries: {
             en: 'Journal Entries',
             pt: 'Entradas do Diário',
+        },
+        logout: {
+            en: 'Logout',
+            pt: 'Sair',
         },
     }
 
@@ -289,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (geo) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const { latitude, longitude } = position.coords
+                    let { latitude, longitude } = position.coords
 
                     const simulatedPosition = {
                         sanFrancisco: {
@@ -309,6 +325,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             longitude: -74.006, // Longitude de Nova Iorque
                         },
                     }
+
+                    // latitude = simulatedPosition.sanFrancisco.latitude
+                    // longitude = simulatedPosition.sanFrancisco.longitude
+
+                    latitude = simulatedPosition.saoPaulo.latitude
+                    latitude = simulatedPosition.saoPaulo.longitude
 
                     const localDate = new Date().toLocaleString(getLanguage(), {
                         year: 'numeric',
@@ -416,13 +438,136 @@ document.addEventListener('DOMContentLoaded', () => {
 
             entries.forEach((entry) => {
                 const li = document.createElement('li')
-                li.innerHTML = `${entry.title} - ${entry.date}<br>${entry.description}`
+                li.dataset.id = entry.id
+                li.innerHTML = `<strong>${entry.title}</strong>
+                                <strong>${entry.date}</strong>
+                                <br>
+                                ${entry.description}
+                                <hr>
+                                <input type="file" class="import-image" style="display: none" accept="image/*" />
+                                <div class="image-buttons">
+                                <button class="add-image-btn">Add Image</button>
+                                <button class="view-image-btn">View Image</button>
+                                <button class="delete-entry-btn">Delete Entry</button>
+                                </div>
+                                <p class="output" style="display: none">
+                                    ${
+                                        entry.image
+                                            ? `<img src="${entry.image}" style="max-width: 100%; height: auto;" />`
+                                            : ''
+                                    }
+                                </p>
+                                `
                 entriesList.appendChild(li)
+            })
+
+            const viewImageButtons = document.querySelectorAll('.view-image-btn')
+            viewImageButtons.forEach((button) => {
+                button.addEventListener('click', handleViewImage)
+            })
+
+            const deleteEntryButtons = document.querySelectorAll('.delete-entry-btn')
+            deleteEntryButtons.forEach((button) => {
+                button.addEventListener('click', handleDeleteEntry)
             })
         }
 
         request.onerror = (event) => {
             console.log('Error fetching entries', event)
+        }
+    }
+
+    function handleViewImage(event) {
+        const li = event.target.closest('li')
+        const output = li.querySelector('.output img')
+
+        if (output && output.src) {
+            const modal = document.getElementById('image-modal')
+            const modalImg = document.getElementById('modal-image')
+            const captionText = document.getElementById('caption')
+
+            modal.style.display = 'block'
+            modalImg.src = output.src
+            captionText.innerHTML = output.alt
+
+            const span = document.getElementsByClassName('close-modal')[0]
+
+            span.onclick = () => {
+                modal.style.display = 'none'
+            }
+
+            window.onclick = (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none'
+                }
+            }
+        } else {
+            alert('No image to display.')
+        }
+    }
+
+    function handleDeleteEntry(event) {
+        const li = event.target.closest('li')
+        const entryId = Number(li.dataset.id)
+
+        const deleteRequest = db.transaction([storeName], 'readwrite').objectStore(storeName).delete(entryId)
+
+        deleteRequest.onsuccess = () => {
+            console.log('Entry deleted successfully')
+            displayEntries()
+        }
+
+        deleteRequest.onerror = (event) => {
+            console.log('Error deleting entry', event)
+        }
+    }
+
+    document.getElementById('diary-entries-list').addEventListener('click', (event) => {
+        if (event.target.classList.contains('add-image-btn')) {
+            const li = event.target.closest('li')
+            const importImageInput = li.querySelector('.import-image')
+
+            importImageInput.click()
+
+            importImageInput.onchange = () => {
+                const file = importImageInput.files[0]
+                if (file) {
+                    const reader = new FileReader()
+                    reader.onload = (e) => {
+                        const base64Image = e.target.result
+                        const title = li.querySelector('strong').textContent
+                        updateEntryImage(title, base64Image)
+                    }
+                    reader.readAsDataURL(file)
+                }
+            }
+        }
+    })
+
+    function updateEntryImage(title, image) {
+        const transaction = db.transaction([storeName], 'readwrite')
+        const objectStore = transaction.objectStore(storeName)
+        const index = objectStore.index('userId')
+        const request = index.getAll(currentUserId)
+
+        request.onsuccess = (event) => {
+            const entries = event.target.result
+            const entry = entries.find((e) => e.title === title)
+            if (entry) {
+                entry.image = image
+                const updateRequest = objectStore.put(entry)
+                updateRequest.onsuccess = () => {
+                    console.log('Entry updated with image')
+                    displayEntries()
+                }
+                updateRequest.onerror = (event) => {
+                    console.error('Error updating entry with image', event)
+                }
+            }
+        }
+
+        request.onerror = (event) => {
+            console.error('Error fetching entries for update', event)
         }
     }
 
@@ -469,6 +614,20 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('distance-info').textContent = textElements.distanceInfo[lang]
         document.querySelector('#diary-entries ul').previousElementSibling.textContent =
             textElements.journalEntries[lang]
+        document.getElementById('logout-btn').textContent = textElements.logout[lang]
+
+        const imageButtons = document.querySelectorAll('.add-image-btn, .view-image-btn, .delete-entry-btn')
+        if (imageButtons.length > 0) {
+            imageButtons.forEach((button) => {
+                if (button.classList.contains('add-image-btn')) {
+                    button.textContent = textElements.imageBtn[lang]
+                } else if (button.classList.contains('view-image-btn')) {
+                    button.textContent = textElements.viewImageBtn[lang]
+                } else if (button.classList.contains('delete-entry-btn')) {
+                    button.textContent = textElements.deleteEntryBtn[lang]
+                }
+            })
+        }
 
         localStorage.setItem('preferredLanguage', lang)
 
